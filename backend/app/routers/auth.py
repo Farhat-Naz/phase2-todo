@@ -18,7 +18,7 @@ from typing import Annotated
 
 from app.database import get_db
 from app.models import User
-from app.schemas import UserRegister, UserPublic, Token
+from app.schemas import UserRegister, UserLogin, UserPublic, Token
 from app.dependencies import CurrentUser
 from app.auth import create_access_token, hash_password, verify_password
 
@@ -108,8 +108,8 @@ async def register(
     "/login",
     response_model=Token,
     status_code=status.HTTP_200_OK,
-    summary="Login user",
-    description="Authenticate user and receive JWT access token.",
+    summary="Login user (JSON)",
+    description="Authenticate user with JSON credentials and receive JWT access token. Serverless-compatible.",
     responses={
         200: {
             "description": "Login successful",
@@ -133,11 +133,84 @@ async def register(
     }
 )
 async def login(
+    credentials: UserLogin,
+    db: Annotated[Session, Depends(get_db)]
+) -> Token:
+    """
+    Login user with JSON credentials and return JWT access token.
+
+    This endpoint accepts JSON data (application/json) and is compatible
+    with serverless environments like Vercel.
+
+    Args:
+        credentials: Login credentials (email and password) as JSON
+        db: Database session dependency
+
+    Returns:
+        Token: JWT access token and token type
+
+    Raises:
+        HTTPException 401: If credentials are invalid
+    """
+    # Find user by email
+    user = db.exec(select(User).where(User.email == credentials.email)).first()
+
+    # Verify user exists and password is correct
+    if not user or not verify_password(credentials.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Create access token with user ID
+    access_token = create_access_token(data={"sub": str(user.id)})
+
+    # Return token with user data
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserPublic.model_validate(user)
+    )
+
+
+@router.post(
+    "/login/form",
+    response_model=Token,
+    status_code=status.HTTP_200_OK,
+    summary="Login user (Form Data)",
+    description="Authenticate user with form data (OAuth2 compatible). May not work in all serverless environments.",
+    responses={
+        200: {
+            "description": "Login successful",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                        "token_type": "bearer"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Invalid credentials",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Incorrect email or password"}
+                }
+            }
+        },
+    }
+)
+async def login_form(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)]
 ) -> Token:
     """
-    Login user and return JWT access token.
+    Login user with form data and return JWT access token.
+
+    This endpoint uses OAuth2PasswordRequestForm (application/x-www-form-urlencoded)
+    for OAuth2 compatibility. Use /login for JSON-based authentication in serverless.
 
     Args:
         form_data: OAuth2 form data with username (email) and password
