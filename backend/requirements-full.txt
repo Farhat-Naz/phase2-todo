@@ -1,0 +1,33 @@
+# Backend Dependencies for Todo Application
+# Python 3.13+
+# Package Manager: uv
+
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database ORM and Migrations
+sqlmodel==0.0.22
+alembic==1.14.0
+psycopg2-binary==2.9.10  # PostgreSQL adapter
+
+# Authentication and Security
+passlib[bcrypt]==1.7.4  # Password hashing
+python-jose[cryptography]==3.3.0  # JWT tokens
+python-multipart==0.0.20  # Form data parsing
+
+# Environment and Configuration
+python-dotenv==1.0.1  # Load .env files
+pydantic>=2.10.6  # Data validation (use installed version)
+pydantic-settings>=2.7.1  # Settings management
+
+# Development and Testing
+pytest==8.3.4
+pytest-asyncio==0.25.2
+httpx==0.28.1  # Async HTTP client for testing
+
+# Email Services
+sendgrid==6.11.0  # SendGrid email provider
+
+# Additional dependencies for file uploads and form handling
+# Already present: python-multipart==0.0.20

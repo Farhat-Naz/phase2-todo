@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: phaseii-todo-backend
+    env: python
+    runtime: python-3.11.0
+    rootDir: backend
+    region: singapore
+    plan: free
+    branch: 006-high-priority
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      - key: CORS_ORIGINS
+        value: https://phase-ii-todo.vercel.app
+      - key: ENV
+        value: production
+      - key: DEBUG
+        value: False

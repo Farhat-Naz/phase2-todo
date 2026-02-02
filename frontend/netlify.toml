@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# Use Netlify's Next.js Runtime
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Environment variables will be set in Netlify dashboard
+# Required: NEXT_PUBLIC_API_URL=https://phaseii-todo-backend.onrender.com

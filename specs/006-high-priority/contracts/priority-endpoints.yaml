@@ -1,0 +1,365 @@
+openapi: 3.0.3
+info:
+  title: Todo Priority API
+  description: API contract for high priority task marking feature
+  version: 1.0.0
+  contact:
+    name: Agentic Todo Team
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local development
+  - url: https://api.todo.example.com/api
+    description: Production
+
+paths:
+  /todos:
+    get:
+      summary: List todos with priority filtering and sorting
+      operationId: listTodos
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: priority
+          in: query
+          description: Filter by priority level
+          required: false
+          schema:
+            $ref: '#/components/schemas/PriorityLevel'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Successful response with todos sorted by priority
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      summary: Create a new todo with optional priority
+      operationId: createTodo
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoCreate'
+      responses:
+        '201':
+          description: Todo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /todos/{todo_id}:
+    get:
+      summary: Get a specific todo
+      operationId: getTodo
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    patch:
+      summary: Update todo fields including priority
+      operationId: updateTodo
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoUpdate'
+            examples:
+              setPriorityHigh:
+                summary: Mark as high priority
+                value:
+                  priority: "high"
+              setPriorityNormal:
+                summary: Remove priority (set to normal)
+                value:
+                  priority: "normal"
+              updateMultipleFields:
+                summary: Update priority and other fields
+                value:
+                  title: "Updated title"
+                  priority: "high"
+                  completed: true
+      responses:
+        '200':
+          description: Todo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      summary: Delete a todo
+      operationId: deleteTodo
+      tags:
+        - Todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      responses:
+        '204':
+          description: Todo deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Better Auth
+
+  parameters:
+    TodoId:
+      name: todo_id
+      in: path
+      required: true
+      description: UUID of the todo
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    PriorityLevel:
+      type: string
+      enum:
+        - high
+        - normal
+      description: Priority level for todos
+
+    Todo:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - completed
+        - priority
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+        completed:
+          type: boolean
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TodoCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+        completed:
+          type: boolean
+          default: false
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+          default: normal
+
+    TodoUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        description:
+          type: string
+          nullable: true
+          maxLength: 2000
+        completed:
+          type: boolean
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+      description: All fields are optional for PATCH updates
+
+    TodoResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Todo'
+
+    TodoListResponse:
+      type: object
+      required:
+        - data
+        - total
+        - page
+        - page_size
+        - total_pages
+        - has_next
+        - has_prev
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Todo'
+          description: Todos sorted by priority (high first), then created_at DESC
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - message
+            - code
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingToken:
+              value:
+                error:
+                  message: "Authorization required"
+                  code: "UNAUTHORIZED"
+            invalidToken:
+              value:
+                error:
+                  message: "Invalid or expired token"
+                  code: "INVALID_TOKEN"
+
+    NotFoundError:
+      description: Todo not found or user doesn't own the todo
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error:
+              message: "Todo not found"
+              code: "NOT_FOUND"
+
+    ValidationError:
+      description: Invalid request data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidPriority:
+              value:
+                error:
+                  message: "Invalid priority value"
+                  code: "INVALID_PRIORITY"
+                  details:
+                    allowed: ["high", "normal"]
+            invalidTitle:
+              value:
+                error:
+                  message: "Validation error"
+                  code: "VALIDATION_ERROR"
+                  details:
+                    title: "Title must be between 1 and 500 characters"

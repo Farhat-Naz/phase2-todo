@@ -1,0 +1,358 @@
+openapi: 3.0.3
+info:
+  title: Todo API - Priority Feature Extension
+  version: 1.1.0
+  description: |
+    API contract for high priority task marking feature.
+    Extends existing todo endpoints with priority field support.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://api.yourdomain.com
+    description: Production
+
+paths:
+  /api/todos:
+    get:
+      summary: List todos with priority support
+      operationId: listTodos
+      tags:
+        - todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: completed
+          in: query
+          schema:
+            type: boolean
+          description: Filter by completion status
+        - name: priority
+          in: query
+          schema:
+            $ref: '#/components/schemas/PriorityLevel'
+          description: Filter by priority level (NEW)
+      responses:
+        '200':
+          description: Successful response with paginated todos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      summary: Create a new todo with optional priority
+      operationId: createTodo
+      tags:
+        - todos
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoCreate'
+      responses:
+        '201':
+          description: Todo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/todos/{todoId}:
+    get:
+      summary: Get a specific todo
+      operationId: getTodo
+      tags:
+        - todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      responses:
+        '200':
+          description: Todo details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    patch:
+      summary: Update todo fields (including priority)
+      operationId: updateTodo
+      tags:
+        - todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoUpdate'
+      responses:
+        '200':
+          description: Todo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      summary: Delete a todo
+      operationId: deleteTodo
+      tags:
+        - todos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TodoId'
+      responses:
+        '204':
+          description: Todo deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  schemas:
+    PriorityLevel:
+      type: string
+      enum:
+        - normal
+        - high
+      description: Priority level for todos
+      example: high
+
+    TodoCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "Buy groceries"
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+          example: "Milk, eggs, bread"
+        completed:
+          type: boolean
+          default: false
+          example: false
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+          description: Priority level (defaults to 'normal' if not provided)
+
+    TodoUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "Buy groceries and snacks"
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+          example: "Milk, eggs, bread, chips"
+        completed:
+          type: boolean
+          example: true
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+          description: Update priority level
+
+    TodoResponse:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - completed
+        - priority
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        user_id:
+          type: string
+          format: uuid
+          example: "987fcdeb-51a2-43f1-9876-abcdef123456"
+        title:
+          type: string
+          example: "Buy groceries"
+        description:
+          type: string
+          nullable: true
+          example: "Milk, eggs, bread"
+        completed:
+          type: boolean
+          example: false
+        priority:
+          $ref: '#/components/schemas/PriorityLevel'
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-07T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-07T10:05:00Z"
+
+    TodoListResponse:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - page_size
+        - total_pages
+        - has_next
+        - has_prev
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodoResponse'
+        total:
+          type: integer
+          example: 42
+        page:
+          type: integer
+          example: 1
+        page_size:
+          type: integer
+          example: 20
+        total_pages:
+          type: integer
+          example: 3
+        has_next:
+          type: boolean
+          example: true
+        has_prev:
+          type: boolean
+          example: false
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: object
+                properties:
+                  loc:
+                    type: array
+                    items:
+                      type: string
+                  msg:
+                    type: string
+                  type:
+                    type: string
+
+  parameters:
+    TodoId:
+      name: todoId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Todo UUID
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: "Could not validate credentials"
+
+    NotFoundError:
+      description: Not Found - Todo does not exist or user does not own it
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: "Todo not found"
+
+    BadRequestError:
+      description: Bad Request - Malformed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail: "Invalid request format"
+
+    ValidationError:
+      description: Validation Error - Invalid field values
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            detail:
+              - loc: ["body", "priority"]
+                msg: "value must be one of: 'high', 'normal'"
+                type: "value_error.const"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /api/auth/login

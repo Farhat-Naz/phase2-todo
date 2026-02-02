@@ -1,0 +1,14 @@
+# Ignore everything outside frontend directory
+../api
+../backend
+../.git
+../node_modules
+
+# Ignore local environment files
+.env.local
+.env*.local
+
+# Ignore build artifacts
+.next/
+node_modules/
+.vercel/
