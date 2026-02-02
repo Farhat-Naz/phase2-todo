@@ -7,6 +7,6 @@ Available routers:
 - auth: Authentication endpoints (register, login, me)
 - todos: Todo CRUD endpoints (create, list, get, update, delete)
 """
-from app.routers import auth, todos, chat
+from app.routers import auth, todos
 
-__all__ = ["auth", "todos", "chat"]
+__all__ = ["auth", "todos"]
