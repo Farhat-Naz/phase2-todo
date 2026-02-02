@@ -8,7 +8,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://phase-iii-todo-8awlrt819-farhats-projects-27800a4d.vercel.app/api/$1"
+      "destination": "https://phase2-todo-backend-cwjukfmsz-farhats-projects-27800a4d.vercel.app/api/$1"
     }
   ]
 }
