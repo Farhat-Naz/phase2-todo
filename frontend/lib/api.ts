@@ -108,6 +108,7 @@ export async function makeApiRequest<T>(config: ApiRequestConfig): Promise<T> {
     method,
     headers: requestHeaders,
     body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include', // Required for CORS with credentials
   });
 
   if (!response.ok) {
