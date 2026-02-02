@@ -76,10 +76,10 @@ def get_engine():
         DATABASE_URL = DATABASE_URL.replace("psql", "", 1)
         DATABASE_URL = DATABASE_URL.strip("'\"")
 
-    # Ensure PostgreSQL URLs use the psycopg dialect
+    # PostgreSQL URL is compatible with psycopg2-binary by default
+    # No need to modify the dialect - SQLAlchemy will auto-detect psycopg2
     if DATABASE_URL.startswith("postgresql://"):
-        logger.info("Converting postgresql:// to postgresql+psycopg:// for psycopg3 compatibility")
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+        logger.info("Using postgresql:// with psycopg2-binary")
 
     # Detect database type (SQLite vs PostgreSQL)
     is_sqlite = DATABASE_URL.startswith("sqlite")
