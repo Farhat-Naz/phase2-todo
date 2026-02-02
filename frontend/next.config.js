@@ -9,8 +9,6 @@ const nextConfig = {
   images: {
     domains: [],
   },
-  // Fix Vercel workspace detection warning
-  outputFileTracingRoot: require('path').join(__dirname, '../'),
 };
 
 module.exports = withNextIntl(nextConfig);
