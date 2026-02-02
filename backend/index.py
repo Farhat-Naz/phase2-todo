@@ -1,7 +1,7 @@
 """
 Vercel serverless function entry point for FastAPI backend.
 
-This file creates a modified FastAPI app without lifespan events for serverless.
+This file creates a modified FastAPI app optimized for serverless deployment.
 """
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.dirname(__file__))
 
 logger.info("Starting Vercel serverless function...")
+
+# Patch database module to use serverless version
+import app.database_serverless as database_serverless
+sys.modules['app.database'] = database_serverless
 
 from app.routers import auth, todos
 
