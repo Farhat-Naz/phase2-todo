@@ -24,14 +24,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 logger.info("Starting Vercel serverless function...")
 
 from app.routers import auth, todos
-# Try to import chat router (all dependencies should be available)
-try:
-    from app.routers import chat
-    CHAT_AVAILABLE = True
-    logger.info("✓ Chat router imported successfully")
-except ImportError as e:
-    logger.warning(f"⚠ Chat router not available (missing dependencies): {e}")
-    CHAT_AVAILABLE = False
 
 # Create FastAPI application WITHOUT lifespan for serverless
 app = FastAPI(
@@ -83,12 +75,7 @@ async def health_check():
 @app.get("/debug/env", tags=["Debug"])
 async def check_env():
     """Check if critical environment variables are set."""
-    openai_key = os.getenv("OPENAI_API_KEY", "")
     return {
-        "openai_key_set": bool(openai_key and openai_key != "your_openai_api_key_here"),
-        "openai_key_length": len(openai_key) if openai_key else 0,
-        "openai_key_prefix": openai_key[:10] + "..." if len(openai_key) > 10 else "NOT_SET",
-        "ai_model": os.getenv("AI_MODEL", "NOT_SET"),
         "database_url_set": bool(os.getenv("DATABASE_URL")),
         "cors_origins": os.getenv("CORS_ORIGINS", "NOT_SET"),
     }
@@ -99,13 +86,6 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 logger.info("✓ Auth router included at /api/auth")
 app.include_router(todos.router, prefix="/api/todos", tags=["Todos"])
 logger.info("✓ Todos router included at /api/todos")
-
-# Conditionally include chat router if dependencies available
-if CHAT_AVAILABLE:
-    app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
-    logger.info("✓ Chat router included at /api/chat")
-else:
-    logger.warning("⚠ Chat router skipped (MCP dependencies not installed)")
 
 logger.info("All routers loaded successfully!")
 
